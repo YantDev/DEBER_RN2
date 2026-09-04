@@ -1,0 +1,1490 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Señal — Industria del software y brecha digital en Ecuador</title>
+<meta name="description" content="Infografía interactiva: la industria del software y la brecha digital en Ecuador.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300;0,9..144,400;0,9..144,600;0,9..144,900;1,9..144,400;1,9..144,600&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ============================================================
+   TOKENS
+   ============================================================ */
+:root{
+  --bg:#0A0B0E;
+  --bg-deep:#050609;
+  --ink:#F4F2ED;
+  --ink-dim:#A9ACB4;
+  --ink-faint:#5B5E66;
+  --signal:#33E8C4;      /* digital / conectividad */
+  --signal-dim:#1B7F6E;
+  --land:#E8A33D;        /* analógico / desconexión */
+  --land-dim:#8A5F22;
+  --line:rgba(244,242,237,.12);
+  --line-strong:rgba(244,242,237,.24);
+
+  --f-display:'Fraunces', serif;
+  --f-mono:'IBM Plex Mono', monospace;
+  --f-sans:'IBM Plex Sans', sans-serif;
+
+  --edge: clamp(1.25rem, 5vw, 4.5rem);
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+html{background:var(--bg);}
+html,body{
+  width:100%;
+  overflow-x:hidden;
+  background:var(--bg);
+  color:var(--ink);
+  font-family:var(--f-sans);
+  -webkit-font-smoothing:antialiased;
+}
+body{position:relative;}
+
+::selection{background:var(--signal);color:var(--bg-deep);}
+
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.01ms !important; animation-iteration-count:1 !important; transition-duration:.01ms !important; scroll-behavior:auto !important;}
+}
+
+a{color:inherit;}
+img{max-width:100%;display:block;}
+
+/* ============================================================
+   NOISE / STATIC TEXTURE  (motivo: "sin señal")
+   ============================================================ */
+.noise{
+  pointer-events:none;
+  position:fixed;
+  inset:0;
+  z-index:60;
+  opacity:.035;
+  mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");
+}
+
+/* ============================================================
+   CURSOR SIGNAL (desktop only)
+   ============================================================ */
+.cursor-signal{
+  position:fixed;
+  top:0;left:0;
+  width:26px;height:26px;
+  border:1px solid var(--signal);
+  border-radius:50%;
+  pointer-events:none;
+  z-index:70;
+  transform:translate(-50%,-50%);
+  transition:border-color .3s ease, background .3s ease, width .3s ease, height .3s ease;
+  mix-blend-mode:difference;
+}
+.cursor-signal::before{
+  content:'';
+  position:absolute;
+  inset:0;
+  margin:auto;
+  width:4px;height:4px;
+  border-radius:50%;
+  background:var(--signal);
+}
+.cursor-signal.is-land{border-color:var(--land);}
+.cursor-signal.is-land::before{background:var(--land);}
+.cursor-signal.is-big{width:64px;height:64px;background:rgba(51,232,196,.08);}
+
+@media (hover:none), (pointer:coarse){
+  .cursor-signal{display:none;}
+}
+
+/* ============================================================
+   SCENE NAV (dots)
+   ============================================================ */
+.scene-nav{
+  position:fixed;
+  right:clamp(1rem,3vw,2.25rem);
+  top:50%;
+  transform:translateY(-50%);
+  z-index:50;
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+  opacity:0;
+  transition:opacity .5s ease;
+}
+.scene-nav.is-visible{opacity:1;}
+.scene-nav button{
+  width:7px;height:7px;
+  border-radius:50%;
+  border:1px solid var(--line-strong);
+  background:transparent;
+  cursor:pointer;
+  padding:0;
+  transition:all .35s ease;
+}
+.scene-nav button.is-active{
+  background:var(--signal);
+  border-color:var(--signal);
+  transform:scale(1.6);
+}
+@media (max-width:860px){ .scene-nav{display:none;} }
+
+/* ============================================================
+   MASTHEAD (fixed, minimal — no navbar tradicional)
+   ============================================================ */
+.masthead{
+  position:fixed;
+  top:0;left:0;right:0;
+  z-index:40;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:1.4rem var(--edge);
+  font-family:var(--f-mono);
+  font-size:.72rem;
+  letter-spacing:.02em;
+  color:var(--ink-dim);
+  pointer-events:none;
+  mix-blend-mode:difference;
+}
+.masthead span{pointer-events:auto;}
+.masthead .bars{display:inline-flex;align-items:flex-end;gap:2px;height:10px;}
+.masthead .bars i{width:2px;background:var(--ink-dim);display:block;}
+.masthead .bars i:nth-child(1){height:3px;}
+.masthead .bars i:nth-child(2){height:5px;}
+.masthead .bars i:nth-child(3){height:7px;}
+.masthead .bars i:nth-child(4){height:10px;}
+
+/* ============================================================
+   GENERIC SCENE
+   ============================================================ */
+.scene{
+  position:relative;
+  width:100%;
+  min-height:100vh;
+  padding:0 var(--edge);
+}
+.eyebrow{
+  font-family:var(--f-mono);
+  font-size:.72rem;
+  color:var(--ink-faint);
+  display:flex;
+  align-items:center;
+  gap:.6rem;
+}
+.eyebrow .dot{width:6px;height:6px;border-radius:50%;background:var(--signal);}
+
+.data-slot{
+  font-family:var(--f-mono);
+  font-size:.78rem;
+  color:var(--land);
+  border:1px dashed var(--land-dim);
+  padding:.35rem .6rem;
+  display:inline-block;
+  border-radius:2px;
+  background:rgba(232,163,61,.06);
+}
+
+/* ============================================================
+   LOADER
+   ============================================================ */
+#loader{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  background:var(--bg-deep);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:1.2rem;
+}
+#loader .word{
+  font-family:var(--f-display);
+  font-weight:300;
+  font-size:clamp(2.4rem, 8vw, 6rem);
+  letter-spacing:-.02em;
+  overflow:hidden;
+}
+#loader .word span{display:inline-block;transform:translateY(110%);}
+#loader .bar{
+  width:min(220px, 40vw);
+  height:1px;
+  background:var(--line);
+  position:relative;
+  overflow:hidden;
+}
+#loader .bar i{
+  position:absolute;left:0;top:0;bottom:0;
+  width:0%;
+  background:var(--signal);
+}
+#loader .pct{
+  font-family:var(--f-mono);
+  font-size:.7rem;
+  color:var(--ink-faint);
+}
+#loader .credits{
+  font-family:var(--f-mono);
+  font-size:.72rem;
+  letter-spacing:.02em;
+  color:var(--ink-dim);
+  text-align:center;
+  max-width:min(420px, 80vw);
+  opacity:0;
+}
+#loader .credits b{
+  color:var(--signal);
+  font-weight:500;
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+.hero{
+  min-height:100svh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  position:relative;
+}
+.hero .field{
+  position:absolute;
+  inset:0;
+  overflow:hidden;
+  pointer-events:none;
+}
+.hero .field .ring{
+  position:absolute;
+  border:1px solid var(--line);
+  border-radius:50%;
+  top:50%;left:78%;
+  transform:translate(-50%,-50%);
+}
+.hero .field .ring.r1{width:180px;height:180px;}
+.hero .field .ring.r2{width:340px;height:340px;border-color:rgba(244,242,237,.07);}
+.hero .field .ring.r3{width:520px;height:520px;border-color:rgba(244,242,237,.045);}
+
+.hero .kicker{
+  font-family:var(--f-mono);
+  font-size:.78rem;
+  color:var(--ink-dim);
+  margin-bottom:1.4rem;
+  max-width:38ch;
+}
+.hero h1{
+  font-family:var(--f-display);
+  font-weight:400;
+  line-height:.98;
+  letter-spacing:-.01em;
+  font-size:clamp(2.6rem, 8.6vw, 8.2rem);
+  max-width:15ch;
+}
+.hero h1 .line{overflow:hidden;display:block;}
+.hero h1 .line span{display:inline-block;}
+.hero h1 em{
+  font-style:italic;
+  font-weight:600;
+  color:var(--signal);
+}
+.hero .sub{
+  margin-top:2.2rem;
+  max-width:38ch;
+  font-size:1.02rem;
+  line-height:1.6;
+  color:var(--ink-dim);
+}
+.hero .scrollcue{
+  position:absolute;
+  bottom:2.4rem;
+  left:var(--edge);
+  display:flex;
+  align-items:center;
+  gap:.7rem;
+  font-family:var(--f-mono);
+  font-size:.68rem;
+  color:var(--ink-faint);
+}
+.hero .scrollcue .track{
+  width:1px;height:38px;
+  background:var(--line);
+  position:relative;
+  overflow:hidden;
+}
+.hero .scrollcue .track i{
+  position:absolute;top:-40%;left:0;
+  width:100%;height:40%;
+  background:var(--signal);
+  animation:scrolldrop 1.8s ease-in-out infinite;
+}
+@keyframes scrolldrop{
+  0%{top:-40%;}
+  60%{top:100%;}
+  100%{top:100%;}
+}
+
+/* ============================================================
+   PINNED STAT SCENE (industria / talento / exportación)
+   ============================================================ */
+.stat-scene{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  position:relative;
+  overflow:hidden;
+}
+.stat-scene .layer{
+  position:absolute;
+  inset:0;
+  pointer-events:none;
+}
+.stat-scene .grid-lines{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(90deg, var(--line) 1px, transparent 1px),
+    linear-gradient(0deg, var(--line) 1px, transparent 1px);
+  background-size:64px 64px;
+  opacity:.35;
+  mask-image:radial-gradient(ellipse at 70% 50%, black, transparent 70%);
+}
+.stat-scene .content{
+  position:relative;
+  z-index:2;
+  display:grid;
+  grid-template-columns:1fr;
+  gap:1.4rem;
+  max-width:900px;
+}
+.stat-scene .big-number{
+  font-family:var(--f-mono);
+  font-weight:500;
+  font-size:clamp(3.4rem, 13vw, 9.5rem);
+  line-height:.9;
+  color:var(--ink);
+  letter-spacing:-.02em;
+  display:flex;
+  align-items:baseline;
+  gap:.6rem;
+}
+.stat-scene .big-number .unit{
+  font-size:.28em;
+  color:var(--signal);
+}
+.stat-scene h2{
+  font-family:var(--f-display);
+  font-weight:400;
+  font-size:clamp(1.6rem, 3.4vw, 2.6rem);
+  max-width:20ch;
+  line-height:1.15;
+}
+.stat-scene p.desc{
+  color:var(--ink-dim);
+  max-width:46ch;
+  line-height:1.65;
+  font-size:.98rem;
+}
+.stat-scene .source-row{
+  display:flex;
+  gap:.75rem;
+  align-items:center;
+  flex-wrap:wrap;
+}
+
+/* barra de progreso decorativa que se llena al hacer scroll */
+.signal-bars{
+  display:flex;
+  align-items:flex-end;
+  gap:6px;
+  height:46px;
+}
+.signal-bars i{
+  width:9px;
+  background:var(--line-strong);
+  border-radius:1px;
+  transform-origin:bottom;
+  transform:scaleY(0);
+}
+.signal-bars i:nth-child(1){height:20%;}
+.signal-bars i:nth-child(2){height:42%;}
+.signal-bars i:nth-child(3){height:64%;}
+.signal-bars i:nth-child(4){height:82%;}
+.signal-bars i:nth-child(5){height:100%;}
+.signal-bars.fill i{background:var(--signal);}
+
+/* ============================================================
+   TALENTO — chips flotantes reactivos al cursor
+   ============================================================ */
+.talent-scene{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  position:relative;
+}
+.talent-scene .headline{
+  max-width:26ch;
+  font-family:var(--f-display);
+  font-size:clamp(1.8rem,4.2vw,3.2rem);
+  line-height:1.1;
+  margin-bottom:2.4rem;
+}
+.chip-field{
+  position:relative;
+  width:100%;
+  height:min(52vh, 460px);
+}
+.chip{
+  position:absolute;
+  font-family:var(--f-mono);
+  font-size:.82rem;
+  padding:.55rem 1rem;
+  border:1px solid var(--line-strong);
+  border-radius:100px;
+  color:var(--ink-dim);
+  background:rgba(244,242,237,.02);
+  white-space:nowrap;
+  will-change:transform;
+  transition:border-color .3s, color .3s, background .3s;
+}
+.chip:hover, .chip.is-near{
+  border-color:var(--signal);
+  color:var(--signal);
+  background:rgba(51,232,196,.06);
+}
+.talent-scene .footer-stat{
+  margin-top:2rem;
+  display:flex;
+  gap:2rem;
+  flex-wrap:wrap;
+  align-items:baseline;
+}
+.talent-scene .footer-stat .n{
+  font-family:var(--f-mono);
+  font-size:2.2rem;
+  color:var(--ink);
+}
+
+/* ============================================================
+   TOPIC SCENES — internet / dispositivos / educación
+   (3 escenas completas independientes, cada una un tema propio)
+   ============================================================ */
+.topic-scene{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  position:relative;
+  overflow:hidden;
+  border-top:1px solid var(--line);
+}
+.topic-scene .content{
+  position:relative;
+  z-index:2;
+  max-width:640px;
+}
+.topic-scene .tag{
+  font-family:var(--f-mono);
+  font-size:.72rem;
+  color:var(--land);
+  margin-bottom:1rem;
+}
+.topic-scene h3{
+  font-family:var(--f-display);
+  font-weight:400;
+  font-size:clamp(1.9rem,4.6vw,3.4rem);
+  max-width:16ch;
+  margin-bottom:1.8rem;
+  line-height:1.1;
+}
+.compare-row{
+  display:flex;
+  gap:2.4rem;
+  flex-wrap:wrap;
+  margin-top:1rem;
+}
+.compare-col{max-width:260px;}
+.compare-col .label{
+  font-family:var(--f-mono);
+  font-size:.7rem;
+  color:var(--ink-faint);
+  margin-bottom:.5rem;
+}
+.compare-col .track{
+  width:100%;
+  height:6px;
+  background:var(--line);
+  border-radius:100px;
+  overflow:hidden;
+  margin-bottom:.6rem;
+}
+.compare-col .track i{
+  display:block;
+  height:100%;
+  width:0%;
+  border-radius:100px;
+}
+.compare-col.urbano .track i{background:var(--signal);}
+.compare-col.rural .track i{background:var(--land);}
+.compare-col .val{
+  font-family:var(--f-mono);
+  font-size:1.1rem;
+  color:var(--ink);
+}
+.topic-scene .data-slot{margin-top:1.8rem;max-width:44ch;display:inline-block;}
+
+/* gráfico de barras decorativo de fondo — el nivel de "señal" baja
+   escena a escena para narrar visualmente la brecha (03→05) */
+.topic-scene .bg-bars{
+  position:absolute;
+  right:var(--edge);
+  top:50%;
+  transform:translateY(-50%);
+  display:flex;
+  align-items:flex-end;
+  gap:16px;
+  height:min(42vh,340px);
+  z-index:1;
+  pointer-events:none;
+}
+.topic-scene .bg-bars i{
+  width:24px;
+  border-radius:2px;
+  border:1px dashed var(--line-strong);
+  background:transparent;
+  transform-origin:bottom;
+  transform:scaleY(0);
+}
+.topic-scene .bg-bars i:nth-child(1){height:22%;}
+.topic-scene .bg-bars i:nth-child(2){height:42%;}
+.topic-scene .bg-bars i:nth-child(3){height:62%;}
+.topic-scene .bg-bars i:nth-child(4){height:82%;}
+.topic-scene .bg-bars i:nth-child(5){height:100%;}
+.topic-scene .bg-bars i.lit{background:var(--land);border-color:transparent;}
+@media (max-width:860px){
+  .topic-scene .bg-bars{
+    position:relative; right:auto; top:auto; transform:none;
+    margin-top:2.4rem; height:120px;
+  }
+  .topic-scene{padding-top:4rem;padding-bottom:4rem;}
+}
+
+/* progreso 1/3 · 2/3 · 3/3 dentro del recorrido de la brecha digital */
+.topic-progress{
+  display:flex;
+  gap:6px;
+  margin-top:2.2rem;
+}
+.topic-progress i{
+  width:26px;height:2px;
+  background:var(--line-strong);
+}
+.topic-progress i.is-active{background:var(--land);}
+
+/* ============================================================
+   EXPORTACIÓN — carrera de barras
+   ============================================================ */
+.export-scene{
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+}
+.export-scene .headline{
+  font-family:var(--f-display);
+  font-size:clamp(1.9rem,4.4vw,3.4rem);
+  max-width:22ch;
+  margin-bottom:3rem;
+  line-height:1.12;
+}
+.race{max-width:760px;width:100%;}
+.race-row{
+  display:grid;
+  grid-template-columns:110px 1fr 90px;
+  align-items:center;
+  gap:1rem;
+  padding:1rem 0;
+  border-bottom:1px solid var(--line);
+}
+.race-row .country{
+  font-family:var(--f-mono);
+  font-size:.85rem;
+  color:var(--ink-dim);
+}
+.race-row.is-ec .country{color:var(--signal);}
+.race-row .track{
+  height:10px;
+  background:var(--line);
+  border-radius:2px;
+  overflow:hidden;
+}
+.race-row .track i{
+  display:block;height:100%;width:0%;
+  background:var(--ink-faint);
+  border-radius:2px;
+}
+.race-row.is-ec .track i{background:var(--signal);}
+.race-row .val{
+  font-family:var(--f-mono);
+  font-size:.85rem;
+  text-align:right;
+  color:var(--ink);
+}
+
+/* ============================================================
+   REFLEXIÓN — ¿Y nosotros qué?
+   ============================================================ */
+.reflect-scene{
+  min-height:100vh;
+  display:flex;
+  align-items:center;
+  position:relative;
+  background:
+    radial-gradient(ellipse 60% 50% at 30% 40%, rgba(232,163,61,.07), transparent 60%),
+    radial-gradient(ellipse 50% 40% at 80% 70%, rgba(51,232,196,.06), transparent 60%);
+}
+.reflect-scene .tag{
+  font-family:var(--f-mono);
+  font-size:.75rem;
+  color:var(--ink-faint);
+  margin-bottom:1.2rem;
+}
+.reflect-scene h2{
+  font-family:var(--f-display);
+  font-style:italic;
+  font-weight:400;
+  font-size:clamp(2rem,5vw,4.2rem);
+  max-width:20ch;
+  line-height:1.12;
+  margin-bottom:2.6rem;
+}
+.conclusions{
+  display:grid;
+  gap:0;
+  max-width:760px;
+}
+.conclusion-item{
+  display:grid;
+  grid-template-columns:2.4rem 1fr;
+  gap:1rem;
+  padding:1.4rem 0;
+  border-top:1px solid var(--line);
+}
+.conclusion-item:last-child{border-bottom:1px solid var(--line);}
+.conclusion-item .mk{
+  font-family:var(--f-mono);
+  color:var(--land);
+  font-size:.85rem;
+}
+.conclusion-item p{
+  color:var(--ink-dim);
+  line-height:1.6;
+  font-size:.98rem;
+}
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+footer{
+  padding:6rem var(--edge) 3rem;
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  flex-wrap:wrap;
+  gap:1.5rem;
+  border-top:1px solid var(--line);
+}
+footer .brand{
+  font-family:var(--f-display);
+  font-size:1.4rem;
+}
+footer .meta{
+  font-family:var(--f-mono);
+  font-size:.72rem;
+  color:var(--ink-faint);
+  text-align:right;
+}
+
+/* reveal genérico */
+.reveal{opacity:0; transform:translateY(24px);}
+
+/* ============================================================
+   REVEAL ZONES — mecánica "pregunta oral → clic → se revela el dato"
+   Pensado para exposición en clase: el contenido nace con estática/
+   desenfoque (ligado al concepto de "señal") y solo se aclara al
+   tocar. El botón ↺ permite ocultarlo de nuevo para repetir la
+   dinámica con otro curso.
+   ============================================================ */
+.reveal-zone{
+  position:relative;
+  isolation:isolate;
+}
+.reveal-zone .reveal-payload{
+  filter:blur(18px);
+  opacity:.28;
+  transition:filter .7s ease, opacity .7s ease;
+  user-select:none;
+}
+.reveal-zone.is-revealed .reveal-payload{
+  filter:blur(0);
+  opacity:1;
+}
+.reveal-overlay{
+  position:absolute;
+  inset:-.6rem;
+  z-index:5;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  gap:.55rem;
+  background:rgba(5,6,9,.42);
+  backdrop-filter:blur(2px);
+  -webkit-backdrop-filter:blur(2px);
+  border:1px dashed var(--line-strong);
+  border-radius:10px;
+  color:var(--ink-dim);
+  font-family:var(--f-mono);
+  font-size:.74rem;
+  letter-spacing:.05em;
+  text-transform:uppercase;
+  text-align:center;
+  padding:1rem;
+  cursor:pointer;
+  transition:opacity .4s ease, visibility .4s ease, border-color .3s ease, background .3s ease, color .3s ease;
+}
+.reveal-overlay:hover, .reveal-overlay:focus-visible{
+  border-color:var(--signal);
+  background:rgba(51,232,196,.07);
+  color:var(--ink);
+  outline:none;
+}
+.reveal-overlay .icon{
+  font-size:1.5rem;
+  color:var(--signal);
+  animation:revealPulse 1.8s ease-in-out infinite;
+}
+@keyframes revealPulse{
+  0%,100%{opacity:.55; transform:scale(1);}
+  50%{opacity:1; transform:scale(1.15);}
+}
+.reveal-zone.is-revealed .reveal-overlay{
+  opacity:0;
+  visibility:hidden;
+  pointer-events:none;
+}
+.reveal-reset{
+  position:absolute;
+  top:.4rem;
+  right:.4rem;
+  z-index:6;
+  width:28px;height:28px;
+  border-radius:50%;
+  border:1px solid var(--line-strong);
+  background:var(--bg);
+  color:var(--ink-dim);
+  font-size:.95rem;
+  line-height:1;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  cursor:pointer;
+  transition:border-color .3s, color .3s;
+}
+.reveal-zone.is-revealed .reveal-reset{display:flex;}
+.reveal-reset:hover{border-color:var(--signal); color:var(--signal);}
+
+@media (max-width:860px){
+  .reveal-overlay{font-size:.66rem; padding:0 1.1rem;}
+  .reveal-overlay .icon{font-size:1.25rem;}
+}
+</style>
+</head>
+<body>
+
+<div class="noise"></div>
+<div class="cursor-signal" id="cursorSignal"></div>
+
+<header class="masthead">
+  <span>SEÑAL — EC</span>
+  <span class="bars"><i></i><i></i><i></i><i></i></span>
+</header>
+
+<nav class="scene-nav" id="sceneNav">
+  <button data-target="hero" class="is-active" aria-label="Inicio"></button>
+  <button data-target="industria" aria-label="Industria"></button>
+  <button data-target="talento" aria-label="Talento"></button>
+  <button data-target="internet" aria-label="Internet"></button>
+  <button data-target="dispositivos" aria-label="Dispositivos"></button>
+  <button data-target="educacion" aria-label="Educación"></button>
+  <button data-target="exportacion" aria-label="Exportación"></button>
+  <button data-target="reflexion" aria-label="Reflexión"></button>
+</nav>
+
+<!-- ============================================================
+     LOADER
+     ============================================================ -->
+<div id="loader">
+  <div class="word" id="loaderWord"><span>ECUADOR</span></div>
+  <div class="bar"><i id="loaderBar"></i></div>
+  <div class="pct" id="loaderPct">CARGANDO SEÑAL — 0%</div>
+  <p class="credits" id="loaderCredits">INFOGRAFÍA HECHA POR <b>ROY, MAYRA, CHRISTOPHER, BRYAN, ODALIS Y JUAN</b></p>
+</div>
+
+<main id="app">
+
+  <!-- ============================================================
+       ESCENA — HERO
+       ============================================================ -->
+  <section class="scene hero" id="hero">
+    <div class="field" aria-hidden="true">
+      <div class="ring r1"></div>
+      <div class="ring r2"></div>
+      <div class="ring r3"></div>
+    </div>
+
+    <p class="kicker">INFOGRAFÍA INTERACTIVA — INDUSTRIA DEL SOFTWARE Y BRECHA DIGITAL</p>
+
+    <h1 id="heroTitle">
+      <span class="line"><span>Un país que</span></span>
+      <span class="line"><span>programa el <em>futuro</em>,</span></span>
+      <span class="line"><span>pero no todos</span></span>
+      <span class="line"><span>tienen señal.</span></span>
+    </h1>
+
+    <p class="sub">Ecuador exporta código y forma talento tech mientras una parte del país sigue sin conexión estable. Esta es la distancia entre esas dos realidades, con datos verificables.</p>
+
+    <div class="scrollcue">
+      <div class="track"><i></i></div>
+      <span>DESPLÁZATE</span>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ESCENA 01 — INDUSTRIA DEL SOFTWARE
+       ============================================================ -->
+  <section class="scene stat-scene" id="industria">
+    <div class="layer grid-lines"></div>
+    <div class="content">
+      <p class="eyebrow"><span class="dot"></span>LA INDUSTRIA</p>
+      <h2 class="reveal">Facturación anual de la industria del software ecuatoriana</h2>
+      <p class="desc reveal">Reemplazar con el dato investigado: facturación total, número de empresas registradas o tasa de crecimiento del sector, con la fuente exacta.</p>
+
+      <div class="reveal-zone reveal" id="revealIndustria" data-reveal-zone>
+        <div class="reveal-payload">
+          <div class="big-number" data-parallax="0.15">
+            <span>US$ <span class="js-num">000</span></span><span class="unit">MILLONES / AÑO</span>
+          </div>
+          <div class="source-row">
+            <span class="data-slot">FUENTE — [AESOFT / INEC / BCE, año]</span>
+            <div class="signal-bars" data-bars>
+              <i></i><i></i><i></i><i></i><i></i>
+            </div>
+          </div>
+        </div>
+        <button type="button" class="reveal-overlay">
+          <span class="icon">◈</span>
+          <span>Toca para revelar el dato</span>
+        </button>
+        <button type="button" class="reveal-reset" title="Ocultar de nuevo">↺</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ESCENA 02 — TALENTO (cursor-reactive)
+       ============================================================ -->
+  <section class="scene talent-scene" id="talento">
+    <p class="eyebrow"><span class="dot"></span>EL TALENTO</p>
+    <h2 class="headline reveal">Detrás del código hay personas — y no alcanzan.</h2>
+
+    <div class="chip-field" id="chipField">
+      <span class="chip">Desarrollador backend</span>
+      <span class="chip">QA / Testing</span>
+      <span class="chip">Data & Analytics</span>
+      <span class="chip">UX / UI</span>
+      <span class="chip">DevOps</span>
+      <span class="chip">Soporte técnico</span>
+      <span class="chip">Ciberseguridad</span>
+      <span class="chip">Product Owner</span>
+      <span class="chip">Mobile</span>
+    </div>
+
+    <div class="footer-stat">
+      <div class="reveal-zone reveal" data-reveal-zone>
+        <div class="reveal-payload">
+          <span class="n">En Ecuador no existe una cifra oficial única que indique exactamente cuántos programadores y desarrolladores trabajan en el país</span><br><span class="data-slot">Profesionales tech en Ecuador — INEC, 2026</span>
+        </div>
+        <button type="button" class="reveal-overlay">
+          <span class="icon">◈</span>
+          <span>Toca para revelar</span>
+        </button>
+        <button type="button" class="reveal-reset" title="Ocultar de nuevo">↺</button>
+      </div>
+      <div class="reveal-zone reveal" data-reveal-zone>
+        <div class="reveal-payload">
+          <span class="n">Uno de los principales problemas es el déficit de talento tecnológico. Las empresas necesitan profesionales con conocimientos actualizados en áreas como programación, inteligencia artificial y ciberseguridad</span><br><span class="data-slot">Déficit de talento estimado — MINTEL, 2025</span>
+        </div>
+        <button type="button" class="reveal-overlay">
+          <span class="icon">◈</span>
+          <span>Toca para revelar</span>
+        </button>
+        <button type="button" class="reveal-reset" title="Ocultar de nuevo">↺</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ESCENA 03 — INTERNET (urbano vs. rural)
+       ============================================================ -->
+  <section class="scene topic-scene" id="internet">
+    <div class="content">
+      <p class="tag">LA BRECHA — INTERNET</p>
+      <h3 class="reveal">Internet: dos Ecuadores, una línea que los separa.</h3>
+
+      <div class="reveal-zone reveal" data-reveal-zone>
+        <div class="reveal-payload">
+          <div class="compare-row">
+            <div class="compare-col urbano">
+              <p class="label">ACCESO URBANO</p>
+              <div class="track"><i data-fill="0" style="width:0%"></i></div>
+              <p class="val">76,6%</p>
+            </div>
+            <div class="compare-col rural">
+              <p class="label">ACCESO RURAL</p>
+              <div class="track"><i data-fill="0" style="width:0%"></i></div>
+              <p class="val">58,7%</p>
+            </div>
+          </div>
+          <p class="data-slot">IMPORTACIONESECUADOR — 2026</p>
+        </div>
+        <button type="button" class="reveal-overlay">
+          <span class="icon">◈</span>
+          <span>Toca para revelar la brecha</span>
+        </button>
+        <button type="button" class="reveal-reset" title="Ocultar de nuevo">↺</button>
+      </div>
+
+      <div class="topic-progress"><i class="is-active"></i><i></i><i></i></div>
+    </div>
+    <div class="bg-bars" data-lit="4">
+      <i></i><i></i><i></i><i></i><i></i>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ESCENA 04 — DISPOSITIVOS
+       ============================================================ -->
+  <section class="scene topic-scene" id="dispositivos">
+    <div class="content">
+      <p class="tag">LA BRECHA — DISPOSITIVOS</p>
+      <h3 class="reveal">Sin computador, la clase virtual es solo una promesa.</h3>
+
+      <div class="reveal-zone reveal" data-reveal-zone>
+        <div class="reveal-payload">
+          <div class="compare-row">
+            <div class="compare-col urbano">
+              <p class="label">HOGARES CON COMPUTADOR</p>
+              <div class="track"><i data-fill="0" style="width:0%"></i></div>
+              <p class="val">38,0%</p>
+            </div>
+            <div class="compare-col rural">
+              <p class="label">HOGARES CON SMARTPHONE</p>
+              <div class="track"><i data-fill="0" style="width:0%"></i></div>
+              <p class="val">59,3%</p>
+            </div>
+          </div>
+          <p class="data-slot">EXPRESO EC — 2026</p>
+        </div>
+        <button type="button" class="reveal-overlay">
+          <span class="icon">◈</span>
+          <span>Toca para revelar la brecha</span>
+        </button>
+        <button type="button" class="reveal-reset" title="Ocultar de nuevo">↺</button>
+      </div>
+
+      <div class="topic-progress"><i class="is-active"></i><i class="is-active"></i><i></i></div>
+    </div>
+    <div class="bg-bars" data-lit="3">
+      <i></i><i></i><i></i><i></i><i></i>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ESCENA 05 — EDUCACIÓN
+       ============================================================ -->
+  <section class="scene topic-scene" id="educacion">
+    <div class="content">
+      <p class="tag">LA BRECHA — EDUCACIÓN</p>
+      <h3 class="reveal">La desconexión también reprueba.</h3>
+
+      <div class="reveal-zone reveal" data-reveal-zone>
+        <div class="reveal-payload">
+          <div class="compare-row">
+            <div class="compare-col urbano">
+              <p class="label">ESTUDIANTES CONECTADOS</p>
+              <div class="track"><i data-fill="0" style="width:0%"></i></div>
+              <p class="val">[XX]%</p>
+            </div>
+            <div class="compare-col rural">
+              <p class="label">SIN ACCESO REGULAR</p>
+              <div class="track"><i data-fill="0" style="width:0%"></i></div>
+              <p class="val">[XX]%</p>
+            </div>
+          </div>
+          <p class="data-slot">FUENTE — [Ministerio de Educación / UNICEF EC, año]</p>
+        </div>
+        <button type="button" class="reveal-overlay">
+          <span class="icon">◈</span>
+          <span>Toca para revelar la brecha</span>
+        </button>
+        <button type="button" class="reveal-reset" title="Ocultar de nuevo">↺</button>
+      </div>
+
+      <div class="topic-progress"><i class="is-active"></i><i class="is-active"></i><i class="is-active"></i></div>
+    </div>
+    <div class="bg-bars" data-lit="2">
+      <i></i><i></i><i></i><i></i><i></i>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ESCENA 06 — EXPORTACIÓN (carrera de barras)
+       ============================================================ -->
+  <section class="scene export-scene" id="exportacion">
+    <p class="eyebrow"><span class="dot"></span>LA COMPARACIÓN REGIONAL</p>
+    <h2 class="headline reveal">¿Cómo se ve Ecuador junto a sus vecinos?</h2>
+
+    <div class="reveal-zone reveal" data-reveal-zone>
+      <div class="reveal-payload">
+          <div class="race-row">
+            <span class="country">COLOMBIA</span>
+            <div class="track"><i data-value="0"></i></div>
+            <span class="val">$1200M</span>
+          </div>
+          <div class="race-row">
+            <span class="country">PERÚ</span>
+            <div class="track"><i data-value="0"></i></div>
+            <span class="val">$350M</span>
+          </div>
+          <div class="race">
+          <div class="race-row is-ec">
+            <span class="country">ECUADOR</span>
+            <div class="track"><i data-value="0"></i></div>
+            <span class="val">$112M</span>
+          </div>
+        </div>
+        <p class="data-slot" style="margin-top:2rem;">[AESOFT / CEPAL / Banco Mundial, 2025] — exportación de servicios de software, US$ millones</p>
+      </div>
+      <button type="button" class="reveal-overlay">
+        <span class="icon">◈</span>
+        <span>Toca para revelar el ranking</span>
+      </button>
+      <button type="button" class="reveal-reset" title="Ocultar de nuevo">↺</button>
+    </div>
+  </section>
+
+  <!-- ============================================================
+       ESCENA 05 — REFLEXIÓN: ¿Y NOSOTROS QUÉ?
+       ============================================================ -->
+  <section class="scene reflect-scene" id="reflexion">
+    <div>
+      <p class="tag reveal">CIERRE DEL GRUPO</p>
+      <h2 class="reveal">¿Y nosotros qué?</h2>
+
+      <div class="conclusions">
+        <div class="conclusion-item reveal">
+          <span class="mk">01</span>
+          <p>[Conclusión 1 del grupo — qué les sorprendió del dato de industria o de talento.]</p>
+        </div>
+        <div class="conclusion-item reveal">
+          <span class="mk">02</span>
+          <p>[Conclusión 2 del grupo — qué implica la brecha digital para su generación o su carrera.]</p>
+        </div>
+        <div class="conclusion-item reveal">
+          <span class="mk">03</span>
+          <p>[Conclusión 3 del grupo — qué podrían hacer ustedes, como futuros profesionales, frente a esto.]</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="meta">
+      REALIDAD NACIONAL · Dr. Juan Pablo Torres Cadena, PhD.<br>
+      Guaranda, Ecuador — 2026
+    </div>
+  </footer>
+
+</main>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+<script>
+(function(){
+  "use strict";
+
+  var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var isTouch = window.matchMedia('(hover:none), (pointer:coarse)').matches;
+  var isMobile = window.innerWidth < 860;
+
+  /* ============================================================
+     LOADER
+     ============================================================ */
+  function runLoader(cb){
+    var pct = 0;
+    var bar = document.getElementById('loaderBar');
+    var pctEl = document.getElementById('loaderPct');
+    var loader = document.getElementById('loader');
+    var word = document.querySelector('#loaderWord span');
+    var credits = document.getElementById('loaderCredits');
+
+    gsap.set(word, {yPercent:0});
+    gsap.to(word, {yPercent:-110, duration:.9, delay:.15, ease:'power4.out'});
+    gsap.to(credits, {opacity:1, duration:.8, delay:.7, ease:'power2.out'});
+
+    var iv = setInterval(function(){
+      // incrementos pequeños para dar tiempo a leer los créditos (~3.5-4s en total)
+      pct += Math.random()*7 + 2;
+      if(pct >= 100){
+        pct = 100;
+        clearInterval(iv);
+        bar.style.width = pct + '%';
+        pctEl.textContent = 'SEÑAL ENCONTRADA — 100%';
+        setTimeout(function(){
+          gsap.to(credits, {opacity:0, duration:.4, ease:'power2.in'});
+          gsap.to(loader, {
+            opacity:0, duration:.7, delay:.15, ease:'power2.inOut',
+            onComplete:function(){ loader.style.display='none'; cb && cb(); }
+          });
+        }, 900);
+        return;
+      }
+      bar.style.width = pct + '%';
+      pctEl.textContent = 'CARGANDO SEÑAL — ' + Math.floor(pct) + '%';
+    }, 180);
+  }
+
+  /* ============================================================
+     LENIS SMOOTH SCROLL + GSAP SYNC
+     ============================================================ */
+  function initSmoothScroll(){
+    if(reduceMotion || typeof Lenis === 'undefined') return null;
+    var lenis = new Lenis({
+      duration: 1.05,
+      smoothWheel: true,
+      smoothTouch: false
+    });
+    lenis.on('scroll', ScrollTrigger.update);
+    gsap.ticker.add(function(time){ lenis.raf(time * 1000); });
+    gsap.ticker.lagSmoothing(0);
+    return lenis;
+  }
+
+  /* ============================================================
+     CURSOR SIGNAL
+     ============================================================ */
+  function initCursor(){
+    if(isTouch) return;
+    var el = document.getElementById('cursorSignal');
+    var mx=0,my=0,cx=0,cy=0;
+    window.addEventListener('mousemove', function(e){ mx=e.clientX; my=e.clientY; });
+    (function loop(){
+      cx += (mx-cx)*0.18;
+      cy += (my-cy)*0.18;
+      el.style.transform = 'translate(' + cx + 'px,' + cy + 'px) translate(-50%,-50%)';
+      requestAnimationFrame(loop);
+    })();
+
+    document.querySelectorAll('a, button, .chip').forEach(function(t){
+      t.addEventListener('mouseenter', function(){ el.classList.add('is-big'); });
+      t.addEventListener('mouseleave', function(){ el.classList.remove('is-big'); });
+    });
+    document.querySelectorAll('#brecha, .reflect-scene').forEach(function(t){
+      t.addEventListener('mouseenter', function(){ el.classList.add('is-land'); });
+      t.addEventListener('mouseleave', function(){ el.classList.remove('is-land'); });
+    });
+  }
+
+  /* ============================================================
+     HERO — kinetic type
+     ============================================================ */
+  function initHero(){
+    var lines = document.querySelectorAll('#heroTitle .line span');
+    gsap.set(lines, {yPercent:110});
+    gsap.to(lines, {
+      yPercent:0, duration:1, ease:'power4.out', stagger:.09, delay:.15
+    });
+
+    gsap.to('#heroTitle', {
+      yPercent:-18, ease:'none',
+      scrollTrigger:{ trigger:'.hero', start:'top top', end:'bottom top', scrub:true }
+    });
+    gsap.to('.hero .field', {
+      yPercent: 25, ease:'none',
+      scrollTrigger:{ trigger:'.hero', start:'top top', end:'bottom top', scrub:true }
+    });
+    gsap.to('.hero .sub, .hero .scrollcue', {
+      opacity:0, y:20, ease:'none',
+      scrollTrigger:{ trigger:'.hero', start:'20% top', end:'70% top', scrub:true }
+    });
+  }
+
+  /* ============================================================
+     GENERIC REVEALS
+     ============================================================ */
+  function initReveals(){
+    document.querySelectorAll('.reveal').forEach(function(el){
+      gsap.to(el, {
+        opacity:1, y:0, duration:.9, ease:'power3.out',
+        scrollTrigger:{ trigger:el, start:'top 85%' }
+      });
+    });
+  }
+
+  /* ============================================================
+     REVEAL ZONES — "pregunta oral → clic → se revela el dato"
+     Gestiona el estado visual (blur/opacidad, botón de reinicio) de
+     cada .reveal-zone y emite eventos reveal:show / reveal:hide para
+     que cada escena dispare su propia animación (contador, barras…).
+     ============================================================ */
+  function initRevealZones(){
+    document.querySelectorAll('[data-reveal-zone]').forEach(function(zone){
+      var overlay = zone.querySelector('.reveal-overlay');
+      var resetBtn = zone.querySelector('.reveal-reset');
+
+      if(overlay){
+        overlay.addEventListener('click', function(){
+          if(zone.classList.contains('is-revealed')) return;
+          zone.classList.add('is-revealed');
+          zone.dispatchEvent(new CustomEvent('reveal:show'));
+        });
+      }
+      if(resetBtn){
+        resetBtn.addEventListener('click', function(e){
+          e.stopPropagation();
+          zone.classList.remove('is-revealed');
+          zone.dispatchEvent(new CustomEvent('reveal:hide'));
+        });
+      }
+    });
+  }
+
+  /* ============================================================
+     ESCENA 01 — INDUSTRIA (parallax grid + número + barras)
+     El número y las barras solo se animan cuando se hace clic en
+     la zona de revelado (antes disparaba solo con el scroll).
+     ============================================================ */
+  function initIndustria(){
+    gsap.to('.stat-scene .grid-lines', {
+      backgroundPosition:'64px 64px', ease:'none',
+      scrollTrigger:{ trigger:'#industria', start:'top bottom', end:'bottom top', scrub:1 }
+    });
+
+    var zone = document.getElementById('revealIndustria');
+    if(!zone) return;
+    var numEl = zone.querySelector('.js-num');
+    var barsWrap = zone.querySelector('.signal-bars');
+    var counter = {v:0};
+
+    zone.addEventListener('reveal:show', function(){
+      counter.v = 0;
+      gsap.to(counter, {
+        v:128, duration:1.6, ease:'power2.out',
+        onUpdate:function(){ numEl.textContent = Math.floor(counter.v); }
+      });
+      barsWrap.classList.add('fill');
+      gsap.fromTo(barsWrap.querySelectorAll('i'), {scaleY:0}, {scaleY:1, duration:.6, stagger:.08, ease:'power2.out'});
+    });
+
+    zone.addEventListener('reveal:hide', function(){
+      numEl.textContent = '000';
+      barsWrap.classList.remove('fill');
+      gsap.set(barsWrap.querySelectorAll('i'), {scaleY:0});
+    });
+  }
+
+  /* ============================================================
+     ESCENA 02 — TALENTO (chips flotantes + repulsión de cursor)
+     ============================================================ */
+  function initTalento(){
+    var field = document.getElementById('chipField');
+    var chips = Array.prototype.slice.call(field.querySelectorAll('.chip'));
+    var positions = [];
+
+    function layout(){
+      var w = field.clientWidth, h = field.clientHeight;
+      positions = chips.map(function(chip, i){
+        var x = Math.random()*(w-160);
+        var y = Math.random()*(h-50);
+        gsap.set(chip, {x:x, y:y});
+        return {x:x, y:y, baseX:x, baseY:y};
+      });
+    }
+    layout();
+    window.addEventListener('resize', layout);
+
+    // deriva lenta constante
+    chips.forEach(function(chip, i){
+      gsap.to(chip, {
+        y:'+=' + (10 + Math.random()*16) * (Math.random()>0.5?1:-1),
+        duration: 3 + Math.random()*2,
+        repeat:-1, yoyo:true, ease:'sine.inOut'
+      });
+    });
+
+    if(!isTouch){
+      field.addEventListener('mousemove', function(e){
+        var rect = field.getBoundingClientRect();
+        var mx = e.clientX - rect.left, my = e.clientY - rect.top;
+        chips.forEach(function(chip, i){
+          var cx = chip.offsetLeft + chip.offsetWidth/2;
+          var cy = chip.offsetTop + chip.offsetHeight/2;
+          var dx = cx-mx, dy = cy-my;
+          var dist = Math.sqrt(dx*dx+dy*dy);
+          if(dist < 140){
+            chip.classList.add('is-near');
+            gsap.to(chip, {
+              x: '+=' + (dx/dist)*18,
+              y: '+=' + (dy/dist)*18,
+              duration:.4, overwrite:'auto'
+            });
+          } else {
+            chip.classList.remove('is-near');
+          }
+        });
+      });
+    }
+
+  }
+
+  /* ============================================================
+     ESCENAS 03–05 — INTERNET / DISPOSITIVOS / EDUCACIÓN
+     (3 escenas completas e independientes, cada una un tema)
+     ============================================================ */
+  function initTopicScenes(){
+    document.querySelectorAll('.topic-scene').forEach(function(scene){
+
+      // barras de comparación urbano vs rural — se animan al hacer clic en la reveal-zone
+      var zone = scene.querySelector('[data-reveal-zone]');
+      if(zone){
+        var bars = zone.querySelectorAll('.compare-col .track i');
+        zone.addEventListener('reveal:show', function(){
+          bars.forEach(function(bar){
+            var valEl = bar.closest('.compare-col').querySelector('.val');
+            var target = valEl ? parseFloat(valEl.textContent.replace('%','')) || 0 : 0;
+            gsap.fromTo(bar, {width:'0%'}, {width: target + '%', duration:1.1, ease:'power2.out'});
+          });
+        });
+        zone.addEventListener('reveal:hide', function(){
+          bars.forEach(function(bar){ gsap.set(bar, {width:'0%'}); });
+        });
+      }
+
+      // barras decorativas de fondo (nivel de "señal" que baja escena a escena)
+      var bg = scene.querySelector('.bg-bars');
+      if(bg){
+        var lit = parseInt(bg.dataset.lit, 10) || 0;
+        var glyphs = bg.querySelectorAll('i');
+        ScrollTrigger.create({
+          trigger: scene, start:'top 70%',
+          onEnter:function(){
+            gsap.to(glyphs, {
+              scaleY:1, duration:.7, stagger:.07, ease:'power2.out',
+              onComplete:function(){
+                glyphs.forEach(function(g,i){ if(i < lit) g.classList.add('lit'); });
+              }
+            });
+          }
+        });
+      }
+
+      // leve parallax vertical del bloque decorativo
+      if(bg && !isMobile){
+        gsap.to(bg, {
+          yPercent: 12, ease:'none',
+          scrollTrigger:{ trigger:scene, start:'top bottom', end:'bottom top', scrub:1 }
+        });
+      }
+    });
+  }
+
+  /* ============================================================
+     ESCENA 04 — EXPORTACIÓN (carrera de barras)
+     ============================================================ */
+  function initExportacion(){
+    var zone = document.querySelector('#exportacion [data-reveal-zone]');
+    if(!zone) return;
+    var rows = zone.querySelectorAll('.race-row');
+    var widths = [78, 52, 40]; // placeholder relativo — ajustar con datos reales
+
+    zone.addEventListener('reveal:show', function(){
+      rows.forEach(function(row, i){
+        var bar = row.querySelector('.track i');
+        gsap.fromTo(bar, {width:'0%'}, {width: widths[i] + '%', duration:1.3, delay:i*.12, ease:'power3.out'});
+      });
+    });
+    zone.addEventListener('reveal:hide', function(){
+      rows.forEach(function(row){ gsap.set(row.querySelector('.track i'), {width:'0%'}); });
+    });
+  }
+
+  /* ============================================================
+     SCENE NAV — dots activos + click to scroll
+     ============================================================ */
+  function initSceneNav(lenis){
+    var nav = document.getElementById('sceneNav');
+    var buttons = nav.querySelectorAll('button');
+    var ids = ['hero','industria','talento','internet','dispositivos','educacion','exportacion','reflexion'];
+
+    ScrollTrigger.create({
+      trigger:'#industria', start:'top 90%', end:'bottom bottom',
+      onToggle:function(self){ nav.classList.toggle('is-visible', true); }
+    });
+
+    ids.forEach(function(id, i){
+      ScrollTrigger.create({
+        trigger:'#'+id, start:'top 55%', end:'bottom 55%',
+        onEnter:function(){ setActive(i); },
+        onEnterBack:function(){ setActive(i); }
+      });
+    });
+    function setActive(i){
+      buttons.forEach(function(b,j){ b.classList.toggle('is-active', i===j); });
+    }
+    buttons.forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var target = document.getElementById(btn.dataset.target);
+        if(lenis){ lenis.scrollTo(target); }
+        else { target.scrollIntoView({behavior:'smooth'}); }
+      });
+    });
+  }
+
+  /* ============================================================
+     BOOT
+     ============================================================ */
+  window.addEventListener('load', function(){
+    gsap.registerPlugin(ScrollTrigger);
+    var lenis = initSmoothScroll();
+
+    runLoader(function(){
+      initCursor();
+      initHero();
+      initReveals();
+      initRevealZones();
+      initIndustria();
+      initTalento();
+      initTopicScenes();
+      initExportacion();
+      initSceneNav(lenis);
+      ScrollTrigger.refresh();
+    });
+  });
+
+})();
+</script>
+</body>
+</html>
